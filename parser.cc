@@ -4,7 +4,7 @@
 #include "parser.h"
 
 using namespace std;
-
+//Task 3 funcitons
 void Parser::mark_variable_initialized(const std::string& var_name) {
     initialized_vars.insert(var_name);
 }
@@ -34,6 +34,69 @@ std::cout << "Warning Code 1: ";
     std::cout << std::endl;
 }
 
+//Task 4-> fucntions
+void Parser::mark_variable_defined(const std::string& var_name, int line_no, bool is_assignment) {
+   //std::cout << "Marking defined: " << var_name << " at line " << line_no 
+           //   << " (assignment: " << is_assignment << ")\n";
+    
+    auto it = var_usage.find(var_name);
+    if (it != var_usage.end()) {
+       // std::cout << "Previous definition found at line " << it->second.defined_line 
+                //  << " used: " << it->second.used_later << "\n";
+        if (it->second.is_assignment && !it->second.used_later) {
+           // std::cout << "Found useless assignment at line " << it->second.defined_line << "\n";
+            useless_assignments.push_back(it->second.defined_line);
+        }
+    }
+    
+    VarUsage usage(line_no, is_assignment);
+    var_usage[var_name] = usage;
+}
+
+void Parser::mark_variable_used(const std::string& var_name) {
+ //  std::cout << "Marking used: " << var_name << "\n";
+    auto it = var_usage.find(var_name);
+    if (it != var_usage.end()) {
+        it->second.used_later = true;
+     //   std::cout << "Variable " << var_name << " marked as used from line " 
+                 // << it->second.defined_line << "\n";
+    }
+}
+
+void Parser::check_useless_assignments() {
+// Check any remaining unused assignments
+   // std::cout << "\nChecking final useless assignments:\n";
+    for (const auto& pair : var_usage) {
+       // std::cout << "Variable: " << pair.first 
+                 // << " Line: " << pair.second.defined_line 
+                //  << " Assignment: " << pair.second.is_assignment 
+                 // << " Used: " << pair.second.used_later << "\n";
+        if (pair.second.is_assignment && !pair.second.used_later) {
+            useless_assignments.push_back(pair.second.defined_line);
+        }
+    }
+}
+
+void Parser::report_warning_code_2() {
+   if (useless_assignments.empty()) {
+        return;
+    }
+
+    // Sort and remove duplicates
+    std::sort(useless_assignments.begin(), useless_assignments.end());
+    auto last = std::unique(useless_assignments.begin(), useless_assignments.end());
+    useless_assignments.erase(last, useless_assignments.end());
+
+    std::cout << "Warning Code 2: ";
+    for (size_t i = 0; i < useless_assignments.size(); i++) {
+        if (i > 0) std::cout << " ";
+        std::cout << useless_assignments[i];
+    }
+    std::cout << std::endl;
+}
+
+
+//testing all tasks
 void Parser::processTaskNumber(int num) {
     if (num >= 1 && num <= 6) {
         tasks[num] = true;
@@ -89,6 +152,10 @@ void Parser::executeAllTasks() {
         }
         if (tasks[3]) {
             report_warning_code_1();
+        }
+        if (tasks[4]) {
+            check_useless_assignments();
+            report_warning_code_2();
         }
     }
 }
@@ -682,9 +749,17 @@ void Parser::parse_input_statement()
 {
     expect(INPUT);
     Token var_token = expect(ID);
+    int line_no = var_token.line_no;
     expect(SEMICOLON);
 
-    mark_variable_initialized(var_token.lexeme);//marking variable as initializes
+     auto it = var_usage.find(var_token.lexeme);
+    if (it != var_usage.end() && it->second.is_assignment && !it->second.used_later) {
+        useless_assignments.push_back(it->second.defined_line);
+    }
+
+
+    mark_variable_defined(var_token.lexeme, var_token.line_no, false);//task 4 -mark as defined
+    mark_variable_initialized(var_token.lexeme);//Task 3 -marking variable as initializes
     allocate_variable(var_token.lexeme);
     
     // Store instruction
@@ -693,8 +768,6 @@ void Parser::parse_input_statement()
     inst.var_name = var_token.lexeme;
     instructions.push_back(inst);
 
-    
-   
 }
 
 void Parser::parse_output_statement()
@@ -702,6 +775,9 @@ void Parser::parse_output_statement()
     expect(OUTPUT);
     Token var_token = expect(ID);
     expect(SEMICOLON);
+
+    //task 4- mark as used
+    mark_variable_used(var_token.lexeme);
 
     // Store instruction
     Instruction inst;
@@ -715,12 +791,18 @@ void Parser::parse_output_statement()
 void Parser::parse_assign_statement()
 {
     Token target = expect(ID);
+    int assign_line_no = target.line_no; 
     expect(EQUAL);
     Token poly_name = lexer.peek(1);  // Just peek without consuming
     
     parse_poly_evaluation();
     expect(SEMICOLON);
-    mark_variable_initialized(target.lexeme);//marking target as initializes
+
+    std::string target_var = target.lexeme;
+    
+    // Store arguments temporarily without marking usage
+    std::vector<std::string> temp_args;
+    
 
     // Add instruction after successful parsing
     Instruction inst;
@@ -730,7 +812,17 @@ void Parser::parse_assign_statement()
     inst.eval.arg_vars = current_args;  // Store collected arguments
     instructions.push_back(inst);
     allocate_variable(target.lexeme);
+
+    mark_variable_defined(target.lexeme, assign_line_no, true); // task 4 - mark target as defined
+     mark_variable_initialized(target.lexeme);//task 3 -marking target as initializes
     
+    // Mark all arguments as used
+    for (const auto& arg : current_args) {
+        if (arg != target_var) {  // Don't mark the target variable as used in its own assignment
+            mark_variable_used(arg);
+        }
+    }
+
     current_args.clear();
 
 }
@@ -769,8 +861,11 @@ void Parser::parse_argument()
         }
         else{
             Token arg = expect(ID);
-            //checku if argument is initialized
+            // Check if argument is initialized
             check_argument_initialization(arg.lexeme, arg.line_no);
+
+            // Mark the variable as used
+            mark_variable_used(arg.lexeme);
 
             current_args.push_back(arg.lexeme);
             }

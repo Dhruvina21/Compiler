@@ -10,7 +10,6 @@
 #include <algorithm>
 #include "lexer.h"
 
-
 // Enums for different types
 enum PrimaryKind {
     VAR,
@@ -150,6 +149,25 @@ class Parser {
     void mark_variable_initialized(const std::string& var_name);
     void check_argument_initialization(const std::string& arg_name, int line_no);
     void report_warning_code_1();
+
+// Task 4-> Add warning code 2 members
+  struct VarUsage{ 
+   int defined_line;
+    bool is_assignment;
+    bool used_later;
+    
+    VarUsage() : defined_line(0), is_assignment(false), used_later(false) {}
+    VarUsage(int line, bool assignment) : 
+        defined_line(line), is_assignment(assignment), used_later(false) {}
+    };
+    std::map<std::string, VarUsage> var_usage;
+    std::vector<int> useless_assignments;
+
+    // Add warning code 2 helper functions
+    void mark_variable_defined(const std::string& var_name, int line_no, bool is_assignment);
+    void mark_variable_used(const std::string& var_name);
+    void check_useless_assignments();
+    void report_warning_code_2();
 
     // Storage
     std::vector<VariableInfo> symbol_table;
