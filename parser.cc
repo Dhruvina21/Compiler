@@ -1,10 +1,66 @@
-
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
 #include "parser.h"
 
 using namespace std;
+
+void Parser::processTaskNumber(int num) {
+    if (num >= 1 && num <= 6) {
+        tasks[num] = true;
+    }
+}
+
+void Parser::executeAllTasks() {
+    // execute task 1 (syntax and semantic checking)
+    bool task1_listed = tasks[1];
+    bool hasError = false;
+
+    // Check for syntax and semantic errors - Task 1
+    try {
+        parse_poly_section();
+        parse_execute_section();
+        parse_inputs_section();
+        expect(END_OF_FILE);
+
+        // Check semantic errors
+        if (!semantic_error.lines.empty()) {
+            if (task1_listed) semantic_error.reportError(1);
+            hasError = true;
+        }
+        if (!semantic_error2.lines.empty()) {
+            if (task1_listed) semantic_error2.reportError(2);
+            hasError = true;
+        }
+        if (!semantic_error3.lines.empty()) {
+            if (task1_listed) semantic_error3.reportError(3);
+            hasError = true;
+        }
+        if (!semantic_error4.lines.empty()) {
+            if (task1_listed) semantic_error4.reportError(4);
+            hasError = true;
+        }
+    } catch (const SyntaxError&) {
+        if (task1_listed) {
+            cout << "SYNTAX ERROR !!!!!&%!!\n";
+        }
+        hasError = true;
+    }
+
+    // If there were errors and task 1 was listed, exit
+    if (hasError && task1_listed) {
+        exit(1);
+    }
+
+    // If no errors, or if errors but task 1 not listed, continue with other tasks
+    if (!hasError || !task1_listed) {
+        // Execute other tasks in order
+        if (tasks[2]) {
+            execute_program();
+        }
+    }
+}
+
 
 Parser::Parser() : next_available(0), current_input_index(0), current_term_list(nullptr), current_coefficient(1) {}
 
@@ -150,8 +206,7 @@ void Parser::execute_program() {
 
 void Parser::syntax_error()
 {
-    cout << "SYNTAX ERROR !!!!!&%!!\n";
-    exit(1);
+    throw SyntaxError();
 }
 
 Token Parser::expect(TokenType expected_type)
@@ -216,25 +271,27 @@ void Parser::print_input_values() {
 void Parser::ConsumeAllInput()
 {
     parse_tasks_section();
-    parse_poly_section();
-    parse_execute_section();
-    parse_inputs_section();
+    // parse_poly_section();
+    // parse_execute_section();
+    // parse_inputs_section();
 
-    expect(END_OF_FILE);
+    // expect(END_OF_FILE);
 
-    //reporting error at the end
-    if (!semantic_error.lines.empty()) {
-        semantic_error.reportError(1);
-    }
-    if (!semantic_error2.lines.empty()) {
-        semantic_error2.reportError(2);
-    }
-    if (!semantic_error3.lines.empty()) {
-        semantic_error3.reportError(3); 
-    }
-    if (!semantic_error4.lines.empty()) {
-        semantic_error4.reportError(4); 
-    }
+    // //reporting error at the end
+
+    // if (!semantic_error.lines.empty()) {
+    //     semantic_error.reportError(1);
+    // }
+    // if (!semantic_error2.lines.empty()) {
+    //     semantic_error2.reportError(2);
+    // }
+    // if (!semantic_error3.lines.empty()) {
+    //     semantic_error3.reportError(3); 
+    // }
+    // if (!semantic_error4.lines.empty()) {
+    //     semantic_error4.reportError(4); 
+    // }
+    executeAllTasks();
 
 }
 
@@ -250,8 +307,10 @@ void Parser::parse_num_list()
     // Only store if we're in INPUTS section
     if (in_inputs_section) {  // Add this as a boolean member variable
         store_input_value(t.lexeme);
+    }else {
+        // Process task number
+        processTaskNumber(std::atoi(t.lexeme.c_str()));
     }
-
 
     Token next = lexer.peek(1);
     if (next.token_type == NUM) {
@@ -705,9 +764,9 @@ int main()
     parser.ConsumeAllInput();
     //int evaluate_polynomial(const std::string& poly_name, const std::vector<int>& args);
    
-    parser.execute_program();
-    parser.print_symbol_table();
-    parser.print_input_values();
+    //parser.execute_program();
+    //parser.print_symbol_table();
+    //parser.print_input_values();
 
     return 0;
 

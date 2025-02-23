@@ -1,4 +1,3 @@
-
 #ifndef __PARSER_H__
 #define __PARSER_H__
 
@@ -6,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <exception>
 #include <algorithm>
 #include "lexer.h"
 
@@ -114,6 +114,11 @@ struct ParsedPolynomial {
     std::vector<std::string> params;  // Parameters (if any)
 };
 
+class SyntaxError : public std::exception {
+    public:
+        SyntaxError() {}
+};
+
 class Parser {
   public:
      void ConsumeAllInput();
@@ -131,6 +136,9 @@ class Parser {
     Token expect(TokenType expected_type);
     struct term_list* current_term_list;
 
+    bool tasks[7] = {false}; 
+    void processTaskNumber(int num); 
+    void executeAllTasks();
     
 
 
@@ -214,4 +222,4 @@ class Parser {
         void parse_inputs_section();
 };
 
-#endif
+#endif 
