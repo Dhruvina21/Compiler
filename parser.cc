@@ -10,7 +10,7 @@ void Parser::mark_variable_initialized(const std::string& var_name) {
 }
 
 void Parser::check_argument_initialization(const std::string& arg_name, int line_no) {
-    if (initialized_vars.find(arg_name) == initialized_vars.end()) {
+     if (initialized_vars.find(arg_name) == initialized_vars.end()) {
         warning_lines.push_back(line_no);
     }
 }
@@ -23,10 +23,10 @@ void Parser::report_warning_code_1() {
     // Sort warning lines
     std::sort(warning_lines.begin(), warning_lines.end());
     
-    // Remove duplicates
-    warning_lines.erase(std::unique(warning_lines.begin(), warning_lines.end()), warning_lines.end());
+    // duplicates
+    std::sort(warning_lines.begin(), warning_lines.end());
 
-    std::cout << "Warning Code 1: ";
+std::cout << "Warning Code 1: ";
     for (size_t i = 0; i < warning_lines.size(); i++) {
         if (i > 0) std::cout << " ";
         std::cout << warning_lines[i];
@@ -683,6 +683,7 @@ void Parser::parse_input_statement()
     expect(INPUT);
     Token var_token = expect(ID);
     expect(SEMICOLON);
+
     mark_variable_initialized(var_token.lexeme);//marking variable as initializes
     allocate_variable(var_token.lexeme);
     
@@ -716,9 +717,10 @@ void Parser::parse_assign_statement()
     Token target = expect(ID);
     expect(EQUAL);
     Token poly_name = lexer.peek(1);  // Just peek without consuming
-    mark_variable_initialized(target.lexeme);//marking target as initializes
+    
     parse_poly_evaluation();
     expect(SEMICOLON);
+    mark_variable_initialized(target.lexeme);//marking target as initializes
 
     // Add instruction after successful parsing
     Instruction inst;
