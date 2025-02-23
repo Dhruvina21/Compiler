@@ -4,10 +4,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <cmath>
 #include <exception>
 #include <algorithm>
 #include "lexer.h"
+
 
 // Enums for different types
 enum PrimaryKind {
@@ -140,7 +142,14 @@ class Parser {
     void processTaskNumber(int num); 
     void executeAllTasks();
     
-
+//task 3 tracking initialized variable
+    std::set<std::string> initialized_vars;
+     std::vector<int> warning_lines;
+    
+    // Helper functions for warning code 1
+    void mark_variable_initialized(const std::string& var_name);
+    void check_argument_initialization(const std::string& arg_name, int line_no);
+    void report_warning_code_1();
 
     // Storage
     std::vector<VariableInfo> symbol_table;
@@ -162,7 +171,7 @@ class Parser {
     int current_input_index;
     
 
-    // Helper functions
+    // fucntions for task 2
     int allocate_variable(const std::string& var_name);
     int get_next_input();
    
